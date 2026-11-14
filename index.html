@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo interactiva | Papeletas digitales SST</title>
+<meta name="description" content="Demostración interactiva con datos ficticios de papeletas digitales de seguridad SST. Sin conexiones a sistemas empresariales.">
+<meta name="robots" content="noindex, nofollow">
+<style>
+  :root{
+    --brand:#155E80;
+    --brand-dark:#0C435C;
+    --brand-soft:#E9F3F8;
+    --brand-soft2:#F5FAFC;
+    --acto:#E07A2B;        /* acto inseguro */
+    --acto-soft:#fdf1e7;
+    --cond:#1B6E8C;        /* condición insegura */
+    --cond-soft:#e9f3f6;
+    --ink:#16241f;
+    --muted:#5d6f67;
+    --line:#dde7e2;
+    --bg:#F3F6F9;
+    --white:#ffffff;
+    --danger:#b3261e;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(16,40,30,.05),0 8px 24px rgba(16,40,30,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:24px 18px 64px}
+
+  /* ---------- Encabezado ---------- */
+  header.topbar{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    background:var(--white);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 20px;box-shadow:var(--shadow);margin-bottom:18px;
+  }
+  .brand{display:flex;align-items:center;gap:14px}
+  .brand .logo{height:48px;width:auto;flex:none;display:block}
+  .brand h1{font-size:17px;margin:0;line-height:1.15}
+  .brand p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+  .counter{
+    text-align:right;font-size:12px;color:var(--muted);
+  }
+  .counter b{display:block;font-size:26px;color:var(--brand);line-height:1}
+  .connBadge{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;margin-bottom:6px}
+  .connBadge.on{background:#e7f4ec;color:#1e8449}
+  .connBadge.off{background:#f3f1e7;color:#9a7b1a}
+
+  /* ---------- Tarjetas ---------- */
+  .card{
+    background:var(--white);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:22px;margin-bottom:18px;
+  }
+  .card > h2{
+    font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--brand);
+    margin:0 0 16px;display:flex;align-items:center;gap:8px;
+  }
+  .card > h2::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--brand)}
+
+  /* ---------- Formulario ---------- */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field.full{grid-column:1/-1}
+  label{font-size:12.5px;font-weight:600;color:var(--ink)}
+  label .req{color:var(--acto)}
+  .hint{font-size:11.5px;color:var(--muted);font-weight:400}
+  input[type=text],input[type=number],input[type=datetime-local],textarea,select{
+    width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;
+    font-size:14px;font-family:inherit;color:var(--ink);background:#fcfdfc;transition:.15s;
+  }
+  input:focus,textarea:focus,select:focus{
+    outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft);background:#fff;
+  }
+  textarea{resize:vertical;min-height:92px}
+  input.invalid{border-color:var(--danger);box-shadow:0 0 0 3px #f8e3e1}
+
+  /* ---------- Toggle tipo ---------- */
+  .typeToggle{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .findToggle{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .findOpt{position:relative;cursor:pointer}
+  .findOpt input{position:absolute;opacity:0;pointer-events:none}
+  .findOpt .box{border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;
+    align-items:center;gap:12px;background:#fcfdfc;transition:.15s}
+  .findOpt .ic{width:38px;height:38px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .findOpt .tx b{display:block;font-size:14px}
+  .findOpt .tx span{font-size:11.5px;color:var(--muted)}
+  .findOpt[data-h=Positivo] .ic{background:#e7f4ec;color:#1e8449}
+  .findOpt[data-h=Negativo] .ic{background:#fbeae8;color:#c0392b}
+  .findOpt[data-h=Positivo] input:checked + .box{border-color:#1e8449;background:#e7f4ec;box-shadow:0 0 0 3px #c9e6d3}
+  .findOpt[data-h=Negativo] input:checked + .box{border-color:#c0392b;background:#fbeae8;box-shadow:0 0 0 3px #f4d4d0}
+  .typeOpt{position:relative;cursor:pointer}
+  .typeOpt input{position:absolute;opacity:0;pointer-events:none}
+  .typeOpt .box{
+    border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;
+    align-items:center;gap:12px;background:#fcfdfc;transition:.15s;
+  }
+  .typeOpt .ic{width:38px;height:38px;border-radius:10px;flex:none;display:flex;
+    align-items:center;justify-content:center;font-size:20px}
+  .typeOpt .tx b{display:block;font-size:14px}
+  .typeOpt .tx span{font-size:11.5px;color:var(--muted)}
+  .typeOpt[data-t=acto] .ic{background:var(--acto-soft);color:var(--acto)}
+  .typeOpt[data-t=cond] .ic{background:var(--cond-soft);color:var(--cond)}
+  .typeOpt[data-t=acto] input:checked + .box{border-color:var(--acto);background:var(--acto-soft);box-shadow:0 0 0 3px #fbe4d2}
+  .typeOpt[data-t=cond] input:checked + .box{border-color:var(--cond);background:var(--cond-soft);box-shadow:0 0 0 3px #d6eaf0}
+
+  /* ---------- Nivel de riesgo ---------- */
+  .riskToggle{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .riskOpt{position:relative;cursor:pointer}
+  .riskOpt input{position:absolute;opacity:0;pointer-events:none}
+  .riskOpt .box{border:1.5px solid var(--line);border-radius:10px;padding:11px 8px;text-align:center;
+    background:#fcfdfc;transition:.15s;font-weight:700;font-size:13.5px;display:flex;align-items:center;
+    justify-content:center;gap:7px}
+  .riskOpt .dot{width:11px;height:11px;border-radius:50%;flex:none}
+  .riskOpt[data-r=Alto]  .dot{background:#c0392b}
+  .riskOpt[data-r=Medio] .dot{background:#d68910}
+  .riskOpt[data-r=Bajo]  .dot{background:#1e8449}
+  .riskOpt[data-r=Alto]  input:checked + .box{border-color:#c0392b;background:#fbeae8;box-shadow:0 0 0 3px #f4d4d0}
+  .riskOpt[data-r=Medio] input:checked + .box{border-color:#d68910;background:#fdf3e3;box-shadow:0 0 0 3px #f6e3c2}
+  .riskOpt[data-r=Bajo]  input:checked + .box{border-color:#1e8449;background:#e7f4ec;box-shadow:0 0 0 3px #c9e6d3}
+
+  /* ---------- Foto ---------- */
+  .photoBtns{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .photoOpt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+    border:1.5px dashed var(--line);border-radius:12px;padding:18px;background:var(--brand-soft2);
+    cursor:pointer;transition:.15s;font-family:inherit;font-size:13px;font-weight:600;color:var(--ink)}
+  .photoOpt:hover{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+  .photoOpt .pi{font-size:28px}
+  .photoPreview{position:relative;display:none;margin-top:12px}
+  .photoPreview img{width:100%;max-height:280px;object-fit:contain;border-radius:10px;border:1px solid var(--line);background:#000}
+  .photoPreview .rm{
+    position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;border:none;
+    border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;
+  }
+
+  /* ---------- Firma ---------- */
+  .sigWrap{position:relative}
+  .sigCanvas{
+    width:100%;height:180px;border:1.5px solid var(--line);border-radius:12px;
+    background:repeating-linear-gradient(#fff,#fff 34px,#f0f4f2 35px);touch-action:none;cursor:crosshair;display:block;
+  }
+  .sigBaseline{position:absolute;left:18px;right:18px;bottom:34px;border-bottom:1px dashed #c4d2cb;pointer-events:none}
+  .sigBaseline span{position:absolute;bottom:4px;left:0;font-size:11px;color:var(--muted)}
+  .sigClear{margin-top:8px}
+
+  /* ---------- Botones ---------- */
+  .btnrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
+  .btn{
+    border:none;border-radius:10px;padding:11px 18px;font-size:14px;font-weight:600;
+    cursor:pointer;font-family:inherit;transition:.15s;display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn-primary{background:var(--brand);color:#fff}
+  .btn-primary:hover{background:var(--brand-dark)}
+  .btn-ghost{background:var(--brand-soft);color:var(--brand)}
+  .btn-ghost:hover{background:#d8ebe3}
+  .btn-line{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn-line:hover{border-color:var(--brand);color:var(--brand)}
+  .btn-sm{padding:7px 12px;font-size:12.5px}
+  .btn-danger{background:#fff;color:var(--danger);border:1px solid #f0d0cd}
+  .btn-danger:hover{background:#fbeae8}
+
+  /* ---------- Registro / tabla ---------- */
+  .reghead{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .tablewrap{overflow-x:auto;margin-top:6px}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  tbody tr:hover{background:var(--brand-soft2)}
+  .pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+  .pill.acto{background:var(--acto-soft);color:var(--acto)}
+  .pill.cond{background:var(--cond-soft);color:var(--cond)}
+  .thumb{width:38px;height:38px;border-radius:8px;object-fit:cover;background:#eee;border:1px solid var(--line)}
+  .rowact{display:flex;gap:6px}
+  .empty{text-align:center;color:var(--muted);padding:34px 0;font-size:13.5px}
+  .empty .pi{font-size:34px;display:block;margin-bottom:6px;opacity:.5}
+
+  /* ---------- Toast ---------- */
+  #toast{
+    position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;
+    opacity:0;pointer-events:none;transition:.25s;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.25);
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ---------- Modal de clave ---------- */
+  .pinOverlay{position:fixed;inset:0;background:rgba(16,40,30,.45);display:none;
+    align-items:center;justify-content:center;z-index:10000;padding:18px}
+  .pinOverlay.show{display:flex}
+  .pinModal{background:#fff;border-radius:16px;padding:26px 24px;width:100%;max-width:340px;
+    text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+  .pinModal .pinIcon{font-size:34px}
+  .pinModal h3{margin:8px 0 4px;font-size:17px;color:var(--ink)}
+  .pinModal p{margin:0 0 16px;font-size:13px;color:var(--muted)}
+  .pinModal input{width:100%;text-align:center;font-size:22px;letter-spacing:.4em;
+    border:1.5px solid var(--line);border-radius:10px;padding:12px;font-family:inherit}
+  .pinModal input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .pinError{color:var(--danger);font-size:12.5px;min-height:16px;margin:8px 0 4px;font-weight:600}
+  .pinBtns{display:flex;gap:10px;margin-top:6px}
+  .pinBtns .btn{flex:1;justify-content:center}
+
+  @media (max-width:640px){
+    .grid{grid-template-columns:1fr}
+    .typeToggle{grid-template-columns:1fr}
+  }
+
+  /* ====================================================
+     VISTA DE IMPRESIÓN / PDF
+  ==================================================== */
+  #printArea{display:none}
+  @media print{
+    body{background:#fff}
+    .wrap,#toast{display:none !important}
+    #printArea{display:block}
+    @page{size:A4;margin:14mm}
+  }
+  .pdoc{font-size:12px;color:#000;width:100%}
+  .pdoc .phead{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid var(--brand);padding-bottom:10px;margin-bottom:14px}
+  .pdoc .phead .pmark{height:40px;width:auto;margin-right:12px;display:block}
+  .pdoc .ptitle{font-size:16px;font-weight:800;margin:0;color:var(--brand)}
+  .pdoc .psub{font-size:10.5px;color:#555;margin:2px 0 0}
+  .pdoc .pno{text-align:right}
+  .pdoc .pno small{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#777;display:block}
+  .pdoc .pno b{font-size:22px;color:var(--brand)}
+  .pdoc .ptype{display:inline-block;padding:5px 14px;border-radius:6px;font-weight:800;font-size:12px;margin-bottom:12px}
+  .pdoc .ptype.acto{background:var(--acto-soft);color:var(--acto);border:1px solid var(--acto)}
+  .pdoc .ptype.cond{background:var(--cond-soft);color:var(--cond);border:1px solid var(--cond)}
+  .pdoc table.pinfo{width:100%;border-collapse:collapse;margin-bottom:14px}
+  .pdoc table.pinfo td{border:1px solid #ccdbe4;padding:7px 10px;font-size:12px}
+  .pdoc table.pinfo .lbl{background:#f1f6f3;font-weight:700;width:130px;color:#333}
+  .pdoc .pdesc{border:1px solid #ccdbe4;border-radius:6px;padding:10px 12px;min-height:70px;margin-bottom:14px;white-space:pre-wrap}
+  .pdoc .pdesc .lbl{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#777;display:block;margin-bottom:4px}
+  .pdoc .pmedia{display:flex;gap:16px;margin-bottom:6px}
+  .pdoc .pmedia .col{flex:1}
+  .pdoc .pmedia .lbl{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#777;display:block;margin-bottom:5px}
+  .pdoc .pphoto{width:100%;max-height:230px;object-fit:contain;border:1px solid #ccdbe4;border-radius:6px;background:#fafafa}
+  .pdoc .psig{border:1px solid #ccdbe4;border-radius:6px;height:120px;display:flex;align-items:flex-end;justify-content:center;padding:6px}
+  .pdoc .psig img{max-width:100%;max-height:96px}
+  .pdoc .psigname{text-align:center;font-size:11px;border-top:1px solid #999;margin:6px 18px 0;padding-top:4px;color:#333}
+  .pdoc .pfoot{margin-top:18px;font-size:9.5px;color:#888;text-align:center;border-top:1px solid #e0e0e0;padding-top:8px}
+
+  /* Estilo de portafolio: versión pública sin marcas empresariales */
+  .demoBanner{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center;
+    border-radius:12px;background:#103f5c;color:#fff;padding:12px 17px;margin-bottom:12px;font-size:12.5px}
+  .demoBanner span{font-weight:800;letter-spacing:.07em}
+  .demoBanner strong{font-size:12px;font-weight:500;opacity:.88}
+  .privacyNote{border-left:4px solid #2d90b7;background:#eaf4fa;border-radius:9px;
+    padding:12px 16px;color:#22475d;font-size:13px;line-height:1.55;margin-bottom:18px}
+  .noteSmall{font-size:11.5px;color:var(--muted);padding-top:8px}
+  @media(max-width:640px){header.topbar{align-items:flex-start;flex-direction:column;} .counter{text-align:left}}
+  @media print{.demoBanner,.privacyNote{display:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="demoBanner"><span>● DEMOSTRACIÓN INTERACTIVA</span><strong>Sin conexión a empresas ni bases de datos</strong></div>
+  <header class="topbar">
+    <div class="brand">
+      
+      <div>
+        <h1>Papeletas digitales de SST</h1>
+        <p>Actos, condiciones y hallazgos positivos · Portafolio profesional</p>
+      </div>
+    </div>
+    <div class="counter">
+      <span class="connBadge on">● Solo en tu navegador</span>
+      Registros de prueba<b id="totalCount">0</b>
+    </div>
+  </header>
+
+  <div class="privacyNote"><b>Modo de prueba:</b> utiliza únicamente nombres, códigos, firmas y fotografías ficticios. Nada se envía a servidores. Las papeletas se guardan solo en este navegador y pueden borrarse cuando quieras.</div>
+
+  <!-- ============ FORMULARIO ============ -->
+  <section class="card">
+    <h2>Datos de la papeleta</h2>
+
+    <div class="grid">
+      <div class="field full">
+        <label>Tipo de hallazgo <span class="req">*</span></label>
+        <div class="findToggle">
+          <label class="findOpt" data-h="Positivo">
+            <input type="radio" name="hallazgo" value="Positivo">
+            <span class="box">
+              <span class="ic">👍</span>
+              <span class="tx"><b>Hallazgo positivo</b><span>Buena práctica o acto seguro a reconocer</span></span>
+            </span>
+          </label>
+          <label class="findOpt" data-h="Negativo">
+            <input type="radio" name="hallazgo" value="Negativo">
+            <span class="box">
+              <span class="ic">⚠️</span>
+              <span class="tx"><b>Hallazgo negativo</b><span>Acto o condición a corregir</span></span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>N° de papeleta</label>
+        <input type="text" id="folio" readonly>
+      </div>
+      <div class="field">
+        <label>Fecha y hora</label>
+        <input type="datetime-local" id="fecha">
+      </div>
+
+      <div class="field">
+        <label for="dni">Código de ejemplo <span class="req">*</span></label>
+        <input type="text" id="dni" maxlength="12" placeholder="Ej. DEMO001" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="nombre">Persona ficticia <span class="req">*</span></label>
+        <input type="text" id="nombre" placeholder="Ej. Operador Demo 01">
+      </div>
+
+      <div class="field">
+        <label for="area">Área / Ubicación</label>
+        <input type="text" id="area" placeholder="Ej. Tajo, Planta, Taller...">
+      </div>
+      <div class="field">
+        <label for="reporta">Reportado por <span class="hint">(supervisor)</span></label>
+        <input type="text" id="reporta" placeholder="Ej. Supervisor Demo">
+      </div>
+
+      <div class="field full" id="typeField">
+        <label>Tipo de reporte <span class="req" id="typeReq">*</span><span class="hint" id="typeNA" style="display:none"> (no aplica a hallazgos positivos)</span></label>
+        <div class="typeToggle">
+          <label class="typeOpt" data-t="acto">
+            <input type="radio" name="tipo" value="Acto inseguro">
+            <span class="box">
+              <span class="ic">⚠️</span>
+              <span class="tx"><b>Acto inseguro</b><span>Conducta o acción de una persona</span></span>
+            </span>
+          </label>
+          <label class="typeOpt" data-t="cond">
+            <input type="radio" name="tipo" value="Condición insegura">
+            <span class="box">
+              <span class="ic">🛠️</span>
+              <span class="tx"><b>Condición insegura</b><span>Estado del entorno o equipo</span></span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field full">
+        <label for="descripcion">Descripción del hallazgo <span class="req">*</span></label>
+        <textarea id="descripcion" placeholder="Describe qué se observó, dónde y el riesgo asociado..."></textarea>
+      </div>
+
+      <div class="field full" id="riskField">
+        <label>Nivel de riesgo <span class="req" id="riskReq">*</span><span class="hint" id="riskNA" style="display:none"> (no aplica a hallazgos positivos)</span></label>
+        <div class="riskToggle">
+          <label class="riskOpt" data-r="Alto">
+            <input type="radio" name="riesgo" value="Alto">
+            <span class="box"><span class="dot"></span>Alto</span>
+          </label>
+          <label class="riskOpt" data-r="Medio">
+            <input type="radio" name="riesgo" value="Medio">
+            <span class="box"><span class="dot"></span>Medio</span>
+          </label>
+          <label class="riskOpt" data-r="Bajo">
+            <input type="radio" name="riesgo" value="Bajo">
+            <span class="box"><span class="dot"></span>Bajo</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="field full">
+        <label for="accion">Acción inmediata tomada <span class="hint">(opcional)</span></label>
+        <textarea id="accion" placeholder="Medida correctiva aplicada en el momento del hallazgo..."></textarea>
+      </div>
+
+      <!-- Foto -->
+      <div class="field full">
+        <label>Evidencia fotográfica</label>
+        <div class="photoBtns">
+          <button type="button" class="photoOpt" id="photoTake">
+            <span class="pi">📷</span><span>Tomar foto</span>
+          </button>
+          <button type="button" class="photoOpt" id="photoUpload">
+            <span class="pi">🖼️</span><span>Subir foto / galería</span>
+          </button>
+        </div>
+        <input type="file" id="photoInputCam" accept="image/*" capture="environment" hidden>
+        <input type="file" id="photoInputFile" accept="image/*" hidden>
+        <div class="photoPreview" id="photoPreview">
+          <button type="button" class="rm" id="photoRemove">Quitar ✕</button>
+          <img id="photoImg" alt="">
+        </div>
+      </div>
+
+      <!-- Firma -->
+      <div class="field full">
+        <label>Firma ficticia <span class="hint">(opcional, dibuja con el dedo o el mouse)</span></label>
+        <div class="sigWrap">
+          <canvas id="sig" class="sigCanvas"></canvas>
+          <div class="sigBaseline"><span>Firma</span></div>
+        </div>
+        <div class="sigClear">
+          <button type="button" class="btn btn-line btn-sm" id="sigClearBtn">Borrar firma</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="btnrow" style="margin-top:18px">
+      <button class="btn btn-primary" id="saveBtn">💾 Guardar papeleta</button>
+      <button class="btn btn-ghost" id="printBtn">🖨️ Imprimir / PDF</button>
+      <button class="btn btn-line" id="newBtn">＋ Nueva / limpiar</button>
+    </div>
+  </section>
+
+  <!-- ============ REGISTRO ============ -->
+  <section class="card">
+    <div class="reghead">
+      <h2 style="margin:0">Papeletas registradas</h2>
+      <div class="btnrow" style="margin:0">
+        <button class="btn btn-ghost btn-sm" id="excelBtn">⬇ Exportar Excel</button>
+        <button class="btn btn-line btn-sm" id="csvBtn">⬇ CSV</button>
+        <button class="btn btn-line btn-sm" id="jsonBtn">⬇ Respaldo JSON</button>
+        <button class="btn btn-line btn-sm" id="lockBtn">🔒 Bloqueado (demo)</button>
+        <button class="btn btn-line btn-sm" id="resetDemoBtn">↺ Restaurar ejemplos</button>
+        <button class="btn btn-danger btn-sm" id="clearAllBtn">Vaciar todo</button>
+      </div>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>N°</th><th>Fecha</th><th>Código</th><th>Persona</th>
+            <th>Hallazgo</th><th>Tipo</th><th>Riesgo</th><th>Foto</th><th>Firma</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="emptyState">
+      <span class="pi">🗂️</span>
+      No hay registros de prueba. Completa el formulario o restaura los ejemplos.
+    </div>
+  </section>
+
+</div>
+
+<!-- Área de impresión (oculta en pantalla) -->
+<div id="printArea"></div>
+<!-- Modal de clave -->
+<div id="pinOverlay" class="pinOverlay">
+  <div class="pinModal">
+    <div class="pinIcon">🔐</div>
+    <h3>Registro protegido</h3>
+    <p id="pinMsg">Ingresa la clave para modificar el registro (demo: 0000).</p>
+    <input type="password" id="pinInput" inputmode="numeric" maxlength="8" placeholder="••••" autocomplete="off">
+    <div id="pinError" class="pinError"></div>
+    <div class="pinBtns">
+      <button class="btn btn-line" id="pinCancel">Cancelar</button>
+      <button class="btn btn-primary" id="pinOk">Desbloquear</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* Demo 100 % local: no hay backend, endpoints, envío de datos ni credenciales. */
+  /* ---------- Persistencia robusta (localStorage + memoria) ---------- */
+  var KEY = "papeletas_sst_publica_v2_registros";
+  // Escenarios ficticios y sin personas, operaciones o ubicaciones identificables.
+  function demoRecords(){
+    var stamp=Date.now();
+    var dateStr=function(days){var d=new Date(stamp-days*86400000);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")+"T10:30";};
+    return [
+      {folio:"PAP-01",fecha:dateStr(2),hallazgo:"Negativo",dni:"DEMO001",nombre:"Operador Demo 01",area:"Zona de mantenimiento (ficticia)",reporta:"Supervisor Demo",tipo:"Condición insegura",riesgo:"Alto",descripcion:"Se observa un cable temporal cruzando un área peatonal sin protección ni señalización.",accion:"Se restringe el acceso y se solicita canalización y señalización de la instalación.",foto:"",firma:"",ts:stamp-20000},
+      {folio:"PAP-02",fecha:dateStr(1),hallazgo:"Positivo",dni:"DEMO002",nombre:"Operador Demo 02",area:"Taller de práctica (ficticio)",reporta:"Supervisor Demo",tipo:"",riesgo:"",descripcion:"Durante la inspección se verifica el uso adecuado de protección ocular y orden del área de trabajo.",accion:"Se reconoce la buena práctica durante la charla de seguridad.",foto:"",firma:"",ts:stamp-10000},
+      {folio:"PAP-03",fecha:dateStr(0),hallazgo:"Negativo",dni:"DEMO003",nombre:"Operador Demo 03",area:"Área operativa (ficticia)",reporta:"Supervisor Demo",tipo:"Acto inseguro",riesgo:"Medio",descripcion:"Se identifica manipulación de herramientas sin inspección visual previa.",accion:"Se detiene la actividad y se verifica el estado de los equipos antes de continuar.",foto:"",firma:"",ts:stamp}
+    ];
+  }
+  var memStore = null;
+  function load(){
+    if(memStore) return memStore;
+    try{
+      var r=localStorage.getItem(KEY);
+      memStore = (r===null) ? demoRecords() : JSON.parse(r);
+      if(!Array.isArray(memStore)) memStore=demoRecords();
+    }catch(e){ memStore = demoRecords(); }
+    return memStore;
+  }
+  function persist(){
+    try{ localStorage.setItem(KEY, JSON.stringify(memStore)); }catch(e){/* solo memoria */}
+  }
+  var data = load();
+
+  /* ---------- Utilidades ---------- */
+  function $(id){ return document.getElementById(id); }
+  function toast(msg){
+    var t=$("toast"); t.textContent=msg; t.classList.add("show");
+    clearTimeout(t._t); t._t=setTimeout(function(){ t.classList.remove("show"); },2600);
+  }
+  function pad(n){ return (n<10?"0":"")+n; }
+  function nowLocal(){
+    var d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+    return d.toISOString().slice(0,16);
+  }
+  function fmtFecha(v){
+    if(!v) return "";
+    var d=new Date(v); if(isNaN(d)) return v;
+    return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+d.getFullYear()+" "+pad(d.getHours())+":"+pad(d.getMinutes());
+  }
+  function nextFolio(){
+    var max=0;
+    data.forEach(function(p){ var n=parseInt((p.folio||"").replace(/\D/g,""),10); if(n>max) max=n; });
+    return "PAP-"+pad((max+1));
+  }
+  function esc(s){ return (s||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];}); }
+
+  /* ---------- Estado del formulario ---------- */
+  var photoData = "";
+
+  function resetForm(){
+    $("folio").value = nextFolio();
+    $("fecha").value = nowLocal();
+    $("dni").value=""; $("nombre").value=""; $("area").value=""; $("reporta").value="";
+    $("descripcion").value="";
+    $("accion").value="";
+    document.querySelectorAll('input[name=tipo]').forEach(function(r){ r.checked=false; });
+    document.querySelectorAll('input[name=riesgo]').forEach(function(r){ r.checked=false; });
+    document.querySelectorAll('input[name=hallazgo]').forEach(function(r){ r.checked=false; });
+    applyHallazgo();
+    photoData=""; $("photoImg").src=""; $("photoPreview").style.display="none";
+    clearSig();
+    [ "dni","nombre","descripcion" ].forEach(function(id){ $(id).classList.remove("invalid"); });
+  }
+
+  /* ---------- Hallazgo positivo/negativo: adapta el nivel de riesgo ---------- */
+  function hallazgoVal(){ var r=document.querySelector('input[name=hallazgo]:checked'); return r?r.value:""; }
+  function applyHallazgo(){
+    var h=hallazgoVal();
+    var positivo = h==="Positivo";
+    // Tipo de reporte: se bloquea en hallazgos positivos
+    $("typeField").style.opacity = positivo ? ".45" : "1";
+    $("typeReq").style.display = positivo ? "none" : "inline";
+    $("typeNA").style.display = positivo ? "inline" : "none";
+    document.querySelectorAll('input[name=tipo]').forEach(function(r){ r.disabled=positivo; if(positivo) r.checked=false; });
+    // Nivel de riesgo: se bloquea en hallazgos positivos
+    $("riskField").style.opacity = positivo ? ".45" : "1";
+    $("riskReq").style.display = positivo ? "none" : "inline";
+    $("riskNA").style.display = positivo ? "inline" : "none";
+    document.querySelectorAll('input[name=riesgo]').forEach(function(r){ r.disabled=positivo; if(positivo) r.checked=false; });
+  }
+  document.querySelectorAll('input[name=hallazgo]').forEach(function(r){
+    r.addEventListener("change", applyHallazgo);
+  });
+
+  /* ---------- Foto (tomar o subir, con redimensionado/compresión) ---------- */
+  $("photoTake").addEventListener("click", function(){ $("photoInputCam").click(); });
+  $("photoUpload").addEventListener("click", function(){ $("photoInputFile").click(); });
+  function processPhoto(e){
+    var f=e.target.files && e.target.files[0]; if(!f) return;
+    if(f.type.indexOf("image")<0){ toast("⚠ El archivo no es una imagen"); return; }
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      var img=new Image();
+      img.onload=function(){
+        var max=1100, w=img.width, h=img.height;
+        if(w>max||h>max){ var s=Math.min(max/w,max/h); w=Math.round(w*s); h=Math.round(h*s); }
+        var c=document.createElement("canvas"); c.width=w; c.height=h;
+        c.getContext("2d").drawImage(img,0,0,w,h);
+        photoData=c.toDataURL("image/jpeg",0.75);
+        $("photoImg").src=photoData; $("photoPreview").style.display="block";
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(f);
+  }
+  $("photoInputCam").addEventListener("change", processPhoto);
+  $("photoInputFile").addEventListener("change", processPhoto);
+  $("photoRemove").addEventListener("click", function(){
+    photoData=""; $("photoImg").src=""; $("photoPreview").style.display="none";
+    $("photoInputCam").value=""; $("photoInputFile").value="";
+  });
+
+  /* ---------- Firma (canvas mouse + touch) ---------- */
+  var canvas=$("sig"), ctx, drawing=false, hasSig=false, lastX=0, lastY=0;
+  function setupCanvas(){
+    var ratio=window.devicePixelRatio||1;
+    var rect=canvas.getBoundingClientRect();
+    canvas.width=rect.width*ratio; canvas.height=rect.height*ratio;
+    ctx=canvas.getContext("2d"); ctx.scale(ratio,ratio);
+    ctx.lineWidth=2.2; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle="#0b2b22";
+  }
+  function pos(e){
+    var r=canvas.getBoundingClientRect();
+    var p=e.touches?e.touches[0]:e;
+    return {x:p.clientX-r.left, y:p.clientY-r.top};
+  }
+  function start(e){ e.preventDefault(); drawing=true; var p=pos(e); lastX=p.x; lastY=p.y; }
+  function move(e){
+    if(!drawing) return; e.preventDefault();
+    var p=pos(e);
+    ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(p.x,p.y); ctx.stroke();
+    lastX=p.x; lastY=p.y; hasSig=true;
+  }
+  function end(e){ drawing=false; }
+  function clearSig(){ if(ctx) ctx.clearRect(0,0,canvas.width,canvas.height); hasSig=false; }
+  canvas.addEventListener("mousedown",start); canvas.addEventListener("mousemove",move);
+  window.addEventListener("mouseup",end);
+  canvas.addEventListener("touchstart",start,{passive:false});
+  canvas.addEventListener("touchmove",move,{passive:false});
+  canvas.addEventListener("touchend",end);
+  $("sigClearBtn").addEventListener("click",clearSig);
+  function sigDataURL(){ return hasSig ? canvas.toDataURL("image/png") : ""; }
+
+  /* ---------- Identificador ficticio de la demo ---------- */
+  $("dni").addEventListener("input",function(){ this.value=this.value.replace(/[^A-Za-z0-9-]/g,"").slice(0,12); });
+
+  /* ---------- Guardar ---------- */
+  function validate(){
+    var ok=true;
+    var hall=hallazgoVal();
+    var dni=$("dni").value.trim(), nom=$("nombre").value.trim(),
+        desc=$("descripcion").value.trim(),
+        tipo=document.querySelector('input[name=tipo]:checked'),
+        riesgo=document.querySelector('input[name=riesgo]:checked');
+    [["dni",/^[A-Za-z0-9-]{4,12}$/.test(dni)],["nombre",!!nom],["descripcion",!!desc]].forEach(function(pair){
+      var el=$(pair[0]); if(pair[1]) el.classList.remove("invalid"); else { el.classList.add("invalid"); ok=false; }
+    });
+    if(!hall){ ok=false; }
+    // tipo de reporte y nivel de riesgo solo son obligatorios en hallazgos negativos
+    var negativo = hall==="Negativo";
+    if(negativo && !tipo){ ok=false; }
+    if(negativo && !riesgo){ ok=false; }
+    if(!ok){
+      var msg = !hall ? "Selecciona si es hallazgo positivo o negativo." :
+                !/^[A-Za-z0-9-]{4,12}$/.test(dni) ? "Escribe un código ficticio de 4 a 12 caracteres." :
+                !nom ? "Falta el nombre del trabajador." :
+                (negativo && !tipo) ? "Selecciona el tipo: acto o condición." :
+                !desc ? "Completa la descripción del hallazgo." :
+                "Selecciona el nivel de riesgo.";
+      toast("⚠ "+msg);
+    }
+    return ok;
+  }
+
+  $("saveBtn").addEventListener("click", function(){
+    if(!validate()) return;
+    var rec={
+      folio:$("folio").value,
+      fecha:$("fecha").value,
+      hallazgo:hallazgoVal(),
+      dni:$("dni").value.trim(),
+      nombre:$("nombre").value.trim(),
+      area:$("area").value.trim(),
+      reporta:$("reporta").value.trim(),
+      tipo:(document.querySelector('input[name=tipo]:checked')||{}).value||"",
+      riesgo:(document.querySelector('input[name=riesgo]:checked')||{}).value||"",
+      descripcion:$("descripcion").value.trim(),
+      accion:$("accion").value.trim(),
+      foto:photoData,
+      firma:sigDataURL(),
+      ts:Date.now()
+    };
+    data.push(rec); persist(); render();
+    toast("✓ Papeleta "+rec.folio+" guardada");
+    resetForm();
+    window.scrollTo({top:0,behavior:"smooth"});
+  });
+
+  $("newBtn").addEventListener("click", resetForm);
+
+  /* ---------- Render tabla ---------- */
+  function render(){
+    var tb=$("tbody"); tb.innerHTML="";
+    $("totalCount").textContent=data.length;
+    $("emptyState").style.display = data.length ? "none":"block";
+    // más recientes primero
+    var sorted=data.slice().sort(function(a,b){ return b.ts-a.ts; });
+    sorted.forEach(function(p){
+      var cls = (p.tipo||"").indexOf("Acto")===0 ? "acto":"cond";
+      var rcolor = p.riesgo==="Alto"?"#c0392b":p.riesgo==="Medio"?"#d68910":"#1e8449";
+      var rbg    = p.riesgo==="Alto"?"#fbeae8":p.riesgo==="Medio"?"#fdf3e3":"#e7f4ec";
+      var hpos = p.hallazgo==="Positivo";
+      var hpill = p.hallazgo ? ("<span class='pill' style='background:"+(hpos?"#e7f4ec":"#fbeae8")+";color:"+(hpos?"#1e8449":"#c0392b")+"'>"+(hpos?"👍 Positivo":"⚠️ Negativo")+"</span>") : "<span class='hint'>—</span>";
+      var tipoCell = p.tipo ? "<span class='pill "+cls+"'>"+esc(p.tipo)+"</span>" : "<span class='hint'>—</span>";
+      var tr=document.createElement("tr");
+      tr.innerHTML=
+        "<td><b>"+esc(p.folio)+"</b></td>"+
+        "<td>"+esc(fmtFecha(p.fecha))+"</td>"+
+        "<td>"+esc(p.dni)+"</td>"+
+        "<td>"+esc(p.nombre)+(p.area?"<br><span class='hint'>"+esc(p.area)+"</span>":"")+"</td>"+
+        "<td>"+hpill+"</td>"+
+        "<td>"+tipoCell+"</td>"+
+        "<td>"+(p.riesgo?"<span class='pill' style='background:"+rbg+";color:"+rcolor+"'>"+esc(p.riesgo)+"</span>":"<span class='hint'>—</span>")+"</td>"+
+        "<td>"+(p.foto?"<img class='thumb' src='"+p.foto+"'>":"<span class='hint'>—</span>")+"</td>"+
+        "<td>"+(p.firma?"✓":"<span class='hint'>—</span>")+"</td>"+
+        "<td><div class='rowact'>"+
+          "<button class='btn btn-line btn-sm' data-print='"+p.ts+"'>🖨️</button>"+
+          "<button class='btn btn-danger btn-sm' data-del='"+p.ts+"'>✕</button>"+
+        "</div></td>";
+      tb.appendChild(tr);
+    });
+    tb.querySelectorAll("[data-del]").forEach(function(b){
+      b.addEventListener("click",function(){
+        var ts=+b.getAttribute("data-del");
+        requirePin(function(){
+          if(confirm("¿Eliminar esta papeleta?")){
+            data=data.filter(function(x){return x.ts!==ts;}); memStore=data; persist(); render();
+            toast("Papeleta eliminada");
+          }
+        });
+      });
+    });
+    tb.querySelectorAll("[data-print]").forEach(function(b){
+      b.addEventListener("click",function(){
+        var ts=+b.getAttribute("data-print");
+        var rec=data.filter(function(x){return x.ts===ts;})[0];
+        if(rec) printRecord(rec);
+      });
+    });
+  }
+
+  /* ---------- Impresión / PDF ---------- */
+  function buildDoc(p){
+    var cls = (p.tipo||"").indexOf("Acto")===0 ? "acto":"cond";
+    var tcol = cls==="acto"?"#E07A2B":"#1B6E8C", tbg = cls==="acto"?"#fdf1e7":"#e9f3f6";
+    var rcolor = p.riesgo==="Alto"?"#c0392b":p.riesgo==="Medio"?"#d68910":"#1e8449";
+    var rbg    = p.riesgo==="Alto"?"#fbeae8":p.riesgo==="Medio"?"#fdf3e3":"#e7f4ec";
+    var hpos = p.hallazgo==="Positivo";
+    var hbadge = p.hallazgo ? ('<span class="ptype" style="background:'+(hpos?"#e7f4ec":"#fbeae8")+';color:'+(hpos?"#1e8449":"#c0392b")+';border:1px solid '+(hpos?"#1e8449":"#c0392b")+'">'+(hpos?"Hallazgo positivo":"Hallazgo negativo")+'</span>') : '';
+    return '<div class="pdoc">'+
+      '<div class="phead">'+
+        '<div style="display:flex;align-items:flex-start">'+
+          ''+
+          '<div><p class="ptitle">Papeleta de Reporte SST</p>'+
+          '<p class="psub">Registro digital SST · Actos y condiciones inseguras</p></div>'+
+        '</div>'+
+        '<div class="pno"><small>N° Papeleta</small><b>'+esc(p.folio)+'</b></div>'+
+      '</div>'+
+      '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">'+
+        hbadge+
+        (p.tipo?'<span class="ptype '+cls+'">'+esc(p.tipo)+'</span>':'')+
+        (p.riesgo?'<span class="ptype" style="background:'+rbg+';color:'+rcolor+';border:1px solid '+rcolor+'">Riesgo '+esc(p.riesgo)+'</span>':'')+
+      '</div>'+
+      '<table class="pinfo">'+
+        '<tr><td class="lbl">Fecha y hora</td><td>'+esc(fmtFecha(p.fecha))+'</td>'+
+            '<td class="lbl">Código demo</td><td>'+esc(p.dni)+'</td></tr>'+
+        '<tr><td class="lbl">Trabajador</td><td>'+esc(p.nombre)+'</td>'+
+            '<td class="lbl">Área / Ubicación</td><td>'+esc(p.area||"—")+'</td></tr>'+
+        '<tr><td class="lbl">Reportado por</td><td colspan="3">'+esc(p.reporta||"—")+'</td></tr>'+
+      '</table>'+
+      '<div class="pdesc"><span class="lbl">Descripción del hallazgo</span>'+esc(p.descripcion)+'</div>'+
+      (p.accion?'<div class="pdesc" style="min-height:50px"><span class="lbl">Acción inmediata tomada</span>'+esc(p.accion)+'</div>':'')+
+      '<div class="pmedia">'+
+        '<div class="col"><span class="lbl">Evidencia fotográfica</span>'+
+          (p.foto?'<img class="pphoto" src="'+p.foto+'">':'<div class="psig" style="height:200px;color:#aaa">Sin foto</div>')+
+        '</div>'+
+        '<div class="col"><span class="lbl">Firma del trabajador</span>'+
+          '<div class="psig">'+(p.firma?'<img src="'+p.firma+'">':'')+'</div>'+
+          '<div class="psigname">'+esc(p.nombre)+'<br>Código '+esc(p.dni)+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="pfoot">Documento generado desde versión de demostración SST · '+esc(p.folio)+'</div>'+
+    '</div>';
+  }
+  function printRecord(p){
+    $("printArea").innerHTML = buildDoc(p);
+    window.print();
+  }
+  $("printBtn").addEventListener("click", function(){
+    if(!validate()) return;
+    printRecord({
+      folio:$("folio").value, fecha:$("fecha").value, hallazgo:hallazgoVal(), dni:$("dni").value.trim(),
+      nombre:$("nombre").value.trim(), area:$("area").value.trim(), reporta:$("reporta").value.trim(),
+      tipo:(document.querySelector('input[name=tipo]:checked')||{}).value||"",
+      riesgo:(document.querySelector('input[name=riesgo]:checked')||{}).value||"",
+      descripcion:$("descripcion").value.trim(), accion:$("accion").value.trim(), foto:photoData, firma:sigDataURL()
+    });
+  });
+
+  /* ---------- Exportaciones ---------- */
+  function download(name,content,type){
+    var blob=new Blob([content],{type:type});
+    var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+  }
+  $("csvBtn").addEventListener("click", function(){
+    if(!data.length){ toast("No hay datos para exportar"); return; }
+    var head=["N°","Fecha","Hallazgo","Código demo","Persona ficticia","Area","Reportado por","Tipo","Nivel de riesgo","Descripcion","Accion inmediata","Tiene foto","Tiene firma"];
+    var rows=data.map(function(p){
+      return [p.folio,fmtFecha(p.fecha),p.hallazgo||"",p.dni,p.nombre,p.area,p.reporta,p.tipo,p.riesgo||"",
+              (p.descripcion||"").replace(/\s+/g," "),(p.accion||"").replace(/\s+/g," "),p.foto?"Si":"No",p.firma?"Si":"No"]
+        .map(function(v){
+          var val=String(v==null ? "" : v);
+          if(/^[\s]*[=+\-@]/.test(val)) val="'"+val;
+          return '"'+val.replace(/"/g,'""')+'"';
+        }).join(",");
+    });
+    download("papeletas_sst.csv","\uFEFF"+head.join(",")+"\n"+rows.join("\n"),"text/csv;charset=utf-8;");
+    toast("CSV exportado");
+  });
+  $("jsonBtn").addEventListener("click", function(){
+    if(!data.length){ toast("No hay datos para exportar"); return; }
+    download("papeletas_sst_respaldo.json",JSON.stringify(data,null,2),"application/json");
+    toast("Respaldo JSON descargado");
+  });
+  $("resetDemoBtn").addEventListener("click", function(){
+    if(confirm("¿Restaurar los 3 registros ficticios? Se reemplazarán los datos de prueba de este navegador.")){
+      data=demoRecords(); memStore=data; persist(); render(); resetForm();
+      toast("✓ Ejemplos restaurados");
+    }
+  });
+  $("clearAllBtn").addEventListener("click", function(){
+    if(!data.length) return;
+    requirePin(function(){
+      if(confirm("Esto eliminará TODAS las papeletas registradas. ¿Continuar?")){
+        data=[]; memStore=[]; persist(); render(); toast("Registro vaciado");
+      }
+    });
+  });
+
+  /* ---------- Candado / clave de modificación ---------- */
+  var PIN = "0000"; // PIN ilustrativo: no protege datos, no usar en entornos reales
+  var unlocked = false;
+  var pendingAction = null;
+
+  function updateLockUI(){
+    var b=$("lockBtn");
+    if(unlocked){ b.textContent="🔓 Desbloqueado"; b.classList.remove("btn-line"); b.classList.add("btn-ghost"); }
+    else { b.textContent="🔒 Bloqueado (demo)"; b.classList.remove("btn-ghost"); b.classList.add("btn-line"); }
+  }
+  function openPin(msg){
+    $("pinMsg").textContent = msg || "Ingresa la clave de demostración (0000) para modificar el registro.";
+    $("pinError").textContent="";
+    $("pinInput").value="";
+    $("pinOverlay").classList.add("show");
+    setTimeout(function(){ $("pinInput").focus(); },50);
+  }
+  function closePin(){ $("pinOverlay").classList.remove("show"); pendingAction=null; }
+  function requirePin(action){
+    if(unlocked){ action(); return; }
+    pendingAction = action;
+    openPin();
+  }
+  function tryPin(){
+    if($("pinInput").value === PIN){
+      unlocked=true; updateLockUI();
+      $("pinOverlay").classList.remove("show");
+      toast("✓ Registro desbloqueado");
+      var a=pendingAction; pendingAction=null;
+      if(a) a();
+    } else {
+      $("pinError").textContent="Clave incorrecta.";
+      $("pinInput").value=""; $("pinInput").focus();
+    }
+  }
+  $("pinOk").addEventListener("click", tryPin);
+  $("pinInput").addEventListener("keydown", function(e){ if(e.key==="Enter") tryPin(); });
+  $("pinCancel").addEventListener("click", closePin);
+  $("pinOverlay").addEventListener("click", function(e){ if(e.target===this) closePin(); });
+  $("lockBtn").addEventListener("click", function(){
+    if(unlocked){ unlocked=false; updateLockUI(); toast("Registro bloqueado"); }
+    else { openPin("Clave de demostración: 0000 (no es autenticación segura)."); }
+  });
+
+  /* ---------- Exportar a Excel (.xlsx con foto embebida) ---------- */
+  function loadScript(src, cb, errcb){
+    var s=document.createElement("script"); s.src=src; s.onload=cb; s.onerror=errcb;
+    document.head.appendChild(s);
+  }
+  $("excelBtn").addEventListener("click", function(){
+    if(!data.length){ toast("No hay datos para exportar"); return; }
+    toast("Generando Excel…");
+    if(window.ExcelJS){ buildExcel(); return; }
+    loadScript("https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js",
+      buildExcel,
+      function(){ toast("Sin conexión: se descargó CSV"); document.getElementById("csvBtn").click(); });
+  });
+  function buildExcel(){
+    try{
+      var wb=new ExcelJS.Workbook();
+      var ws=wb.addWorksheet("Papeletas",{views:[{state:"frozen",ySplit:1}]});
+      var cols=[["N°",10],["Fecha",18],["Hallazgo",14],["Código demo",16],["Persona ficticia",26],["Área / Ubicación",20],
+                ["Reportado por",22],["Tipo",18],["Nivel de riesgo",15],["Descripción",42],
+                ["Acción inmediata",36],["Firma",8],["Foto",24]];
+      ws.columns = cols.map(function(c){ return {header:c[0], width:c[1]}; });
+      var hr=ws.getRow(1); hr.height=24;
+      hr.eachCell(function(cell){
+        cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF155E80"}};
+        cell.font={color:{argb:"FFFFFFFF"},bold:true,size:11};
+        cell.alignment={vertical:"middle",horizontal:"center",wrapText:true};
+      });
+      var sorted=data.slice().sort(function(a,b){ return b.ts-a.ts; });
+      sorted.forEach(function(p,i){
+        var rowNum=i+2;
+        var row=ws.addRow([p.folio,fmtFecha(p.fecha),p.hallazgo||"",p.dni,p.nombre,p.area||"",p.reporta||"",
+                           p.tipo,p.riesgo||"",p.descripcion||"",p.accion||"",p.firma?"Sí":"No",""]);
+        row.height=72;
+        row.eachCell({includeEmpty:true},function(cell){ cell.alignment={vertical:"top",wrapText:true}; });
+        if(p.hallazgo){
+          var hc=row.getCell(3), hpos=p.hallazgo==="Positivo";
+          hc.fill={type:"pattern",pattern:"solid",fgColor:{argb:hpos?"FFE7F4EC":"FFFBEAE8"}};
+          hc.font={color:{argb:hpos?"FF1E8449":"FFC0392B"},bold:true};
+          hc.alignment={vertical:"middle",horizontal:"center"};
+        }
+        if(p.riesgo){
+          var rcell=row.getCell(9);
+          var bg=p.riesgo==="Alto"?"FFFBEAE8":p.riesgo==="Medio"?"FFFDF3E3":"FFE7F4EC";
+          var fc=p.riesgo==="Alto"?"FFC0392B":p.riesgo==="Medio"?"FFB9770E":"FF1E8449";
+          rcell.fill={type:"pattern",pattern:"solid",fgColor:{argb:bg}};
+          rcell.font={color:{argb:fc},bold:true};
+          rcell.alignment={vertical:"middle",horizontal:"center"};
+        }
+        if(p.foto){
+          var b64=p.foto.split(",")[1];
+          var ext=p.foto.indexOf("image/png")>=0?"png":"jpeg";
+          var imgId=wb.addImage({base64:b64, extension:ext});
+          ws.addImage(imgId, { tl:{col:12.15, row:(rowNum-1)+0.12}, ext:{width:130, height:90} });
+        }
+      });
+      wb.xlsx.writeBuffer().then(function(buf){
+        download("papeletas_sst.xlsx", buf,
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        toast("✓ Excel generado");
+      });
+    }catch(e){ console.error(e); toast("Error al generar Excel; se descargó CSV"); document.getElementById("csvBtn").click(); }
+  }
+
+  /* ---------- Init ---------- */
+  window.addEventListener("resize", function(){
+    // re-escala el canvas conservando vacío (la firma se borra al redimensionar)
+    setupCanvas();
+  });
+  setupCanvas();
+  resetForm();
+  render();
+  updateLockUI();
+})();
+</script>
+</body>
+</html>
